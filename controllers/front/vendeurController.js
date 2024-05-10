@@ -119,6 +119,10 @@ exports.createServicePrestataire = async (req, res) => {
         req.body.audio = file.filename;
       }
     }
+    req.body.actif = req.body.verifie = false;
+
+    req.body.messageAdmin =
+      "Patientez pendant que la modération examine votre service";
     const servicePrestaire = await ServicePrestataire.create(req.body);
     return res.status(201).json(servicePrestaire);
   } catch (error) {

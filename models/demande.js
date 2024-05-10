@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 const demandeSchema = new Schema({
   user: {
     type: Schema.Types.ObjectId,
-    ref: "users",
+    ref: "User",
     required: true,
   },
   status: {

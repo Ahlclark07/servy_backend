@@ -176,19 +176,6 @@ exports.getServicesByCat = async (req, res) => {
   }
 };
 
-// Méthode pour récupérer un service par son ID
-exports.getServiceById = async (req, res) => {
-  try {
-    const service = await Service.findById(req.params.id);
-    if (!service) {
-      return res.status(404).json({ message: "Service non trouvé" });
-    }
-    res.status(200).json(service);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 // Méthode pour mettre à jour un service
 exports.updateService = async (req, res) => {
   try {
@@ -239,6 +226,145 @@ exports.deleteService = async (req, res) => {
   }
 };
 
+exports.getServsNameAndIds = async (req, res) => {
+  try {
+    const services = await Service.find({}).select("nom _id actif").exec();
+    const total = await Service.countDocuments();
+    res.status(200).json({ services, total });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getClientsNameAndIds = async (req, res) => {
+  try {
+    const services = await Service.find({}).select("nom _id actif").exec();
+    const total = await Service.countDocuments();
+    res.status(200).json({ services, total });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getServicesPrestataire = async (req, res) => {
+  try {
+    const skip = req.params.skip || 0;
+    const nom =
+      req.params.nom == " " || req.params.nom == "%20" ? "" : req.params.nom;
+
+    const services = await Service.find({
+      nom: { $regex: nom, $options: "i" },
+    });
+    const servicesPrestataires = await ServicePrestataire.find({
+      service: { $in: services },
+      verifie: { $in: ["En attente", "Accepté"] },
+    })
+      .skip(skip)
+      .limit(10)
+      .populate("vendeur", "nom prenoms nom_complet role")
+      .populate("service", "nom")
+      .exec();
+    const total = await ServicePrestataire.countDocuments();
+    res.status(200).json({ servicesPrestataires, total });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getServicesPrestataireByUser = async (req, res) => {
+  try {
+    const skip = req.params.skip || 0;
+    const nom =
+      req.params.nom == " " || req.params.nom == "%20" ? "" : req.params.nom;
+
+    const vendeurs = await User.find({
+      nom: { $regex: nom, $options: "i" },
+      role: { $in: ["vendeur", "vendeur pro"] },
+    });
+    console.log(vendeurs);
+    const servicesPrestataires = await ServicePrestataire.find({
+      vendeur: { $in: vendeurs },
+      verifie: { $in: ["En attente", "Accepté"] },
+    })
+      .skip(skip)
+      .limit(10)
+      .populate("vendeur", "nom prenoms nom_complet role")
+      .populate("service", "nom")
+      .exec();
+    const total = await ServicePrestataire.countDocuments();
+    res.status(200).json({ servicesPrestataires, total });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getServicesPrestataireByServ = async (req, res) => {
+  try {
+    const skip = req.params.skip || 0;
+
+    const servicesPrestataires = await ServicePrestataire.find({
+      service: req.params.service,
+      verifie: { $in: ["En attente", "Accepté"] },
+    })
+      .skip(skip)
+      .limit(10)
+      .populate("vendeur", "nom prenoms nom_complet role")
+      .populate("service", "nom")
+      .exec();
+
+    const total = await ServicePrestataire.countDocuments();
+    console.log({ servicesPrestataires, total });
+    res.status(200).json({ servicesPrestataires, total });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updateServicePrestataireState = async (req, res) => {
+  try {
+    const service = await ServicePrestataire.findById(req.body.id);
+    if (!service) {
+      return res.status(404).json({ message: "Service non trouvé" });
+    }
+    const decision = req.body.decision;
+    if (decision != 0) {
+      await service.updateOne({
+        verifie: "Accepté",
+        messageAdmin: "Vous êtes prêt à vendre votre service !",
+      });
+    } else {
+      await service.updateOne({
+        verifie: "Refusé",
+        messageAdmin: req.body.message,
+      });
+    }
+    res.status(200).json(service);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Méthode pour supprimer un service
+exports.deleteServicePrestataire = async (req, res) => {
+  try {
+    const service = await ServicePrestataire.findByIdAndDelete(req.params.id);
+    const imagePath = service.image; // Supposons que l'image soit stockée dans la propriété "image"
+
+    fs.unlinkSync(
+      appRoot + "/public/uploads/images/servicesprestataires/" + imagePath,
+      function (err) {
+        if (err) throw err;
+        console.log("File deleted!");
+      }
+    );
+    if (!service) {
+      return res.status(404).json({ message: "Service non trouvé" });
+    }
+    res.status(200).json({ message: "Service supprimé avec succès" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Utilisateur en transition
 
 // Méthode pour récupérer toutes les catégories de service
@@ -257,6 +383,26 @@ exports.getAllClientsEnTransition = async (req, res) => {
       .exec();
     const total = await User.countDocuments();
 
+    res.status(200).json({ clients, total });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getUsers = async (req, res) => {
+  try {
+    const skip = req.params.skip || 0;
+    const nom =
+      req.params.nom == " " || req.params.nom == "%20" ? "" : req.params.nom;
+
+    const clients = await User.find({
+      nom: { $regex: nom, $options: "i" },
+      role: { $regex: req.params.role, $options: "i" },
+    })
+      .skip(skip)
+      .limit(10)
+      .populate("adresses")
+      .exec();
+    const total = await User.countDocuments();
     res.status(200).json({ clients, total });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -304,78 +450,3 @@ exports.updateDemandeState = async (req, res) => {
   }
 };
 const ServicePrestataire = require("../../models/servicePrestataire");
-
-// Méthode pour récupérer tous les services prestataires
-exports.getAllServicesPrestataires = async (req, res) => {
-  try {
-    const servicesPrestataires = await ServicePrestataire.find();
-    res.status(200).json(servicesPrestataires);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Méthode pour récupérer un service prestataire par son ID
-exports.getServicePrestataireById = async (req, res) => {
-  try {
-    const servicePrestataire = await ServicePrestataire.findById(req.params.id);
-    if (!servicePrestataire) {
-      return res
-        .status(404)
-        .json({ message: "Service prestataire non trouvé" });
-    }
-    res.status(200).json(servicePrestataire);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Méthode pour mettre à jour un service prestataire
-exports.updateServicePrestataire = async (req, res) => {
-  try {
-    const servicePrestataire = await ServicePrestataire.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    if (!servicePrestataire) {
-      return res
-        .status(404)
-        .json({ message: "Service prestataire non trouvé" });
-    }
-    res.status(200).json(servicePrestataire);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Méthode pour supprimer un service prestataire
-exports.deleteServicePrestataire = async (req, res) => {
-  try {
-    const servicePrestataire = await ServicePrestataire.findByIdAndDelete(
-      req.params.id
-    );
-    if (!servicePrestataire) {
-      return res
-        .status(404)
-        .json({ message: "Service prestataire non trouvé" });
-    }
-    res
-      .status(200)
-      .json({ message: "Service prestataire supprimé avec succès" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Méthode pour récupérer tous les services prestataires d'un même service
-exports.getAllServicesPrestatairesByService = async (req, res) => {
-  try {
-    const servicesPrestataires = await ServicePrestataire.find({
-      service: req.params.serviceId,
-    });
-    res.status(200).json(servicesPrestataires);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};

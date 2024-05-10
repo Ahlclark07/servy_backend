@@ -1,6 +1,7 @@
 // models/servicePrestataire.js
 
 const mongoose = require("mongoose");
+const { type } = require("../config/serviceAccountKey");
 const Schema = mongoose.Schema;
 
 const servicePrestataireSchema = new Schema({
@@ -11,7 +12,7 @@ const servicePrestataireSchema = new Schema({
   },
   vendeur: {
     type: Schema.Types.ObjectId,
-    ref: "user",
+    ref: "User",
     required: true,
   },
   description: String,
@@ -34,8 +35,9 @@ const servicePrestataireSchema = new Schema({
     required: true,
   },
   verifie: {
-    type: Boolean,
-    default: false,
+    type: String,
+    enum: ["En attente", "refusé", "accepté"],
+    default: "En attente",
     required: true,
   },
   delai: {
@@ -43,6 +45,9 @@ const servicePrestataireSchema = new Schema({
     required: true,
     min: 1,
     max: 40,
+  },
+  messageAdmin: {
+    type: String,
   },
 });
 
