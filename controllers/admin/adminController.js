@@ -4,6 +4,7 @@ const CategorieDeService = require("../../models/categorieDeService");
 const appRoot = require("app-root-path");
 const Service = require("../../models/Service");
 const User = require("../../models/user");
+const Demande = require("../../models/demande");
 // Méthode pour créer une nouvelle catégorie de service
 exports.createCategorieDeService = async (req, res) => {
   try {
@@ -23,6 +24,7 @@ exports.getAllCategoriesDeService = async (req, res) => {
     const skip = req.params.skip || 0;
     const nom =
       req.params.nom == " " || req.params.nom == "%20" ? "" : req.params.nom;
+
     const categories = await CategorieDeService.find({
       nom: { $regex: nom, $options: "i" },
     })
@@ -217,7 +219,6 @@ exports.updateServiceState = async (req, res) => {
 
 // Méthode pour supprimer un service
 exports.deleteService = async (req, res) => {
-  ç;
   try {
     const service = await Service.findByIdAndDelete(req.params.id);
     const imagePath = service.image; // Supposons que l'image soit stockée dans la propriété "image"
@@ -248,6 +249,7 @@ exports.getAllClientsEnTransition = async (req, res) => {
       req.params.nom == " " || req.params.nom == "%20" ? "" : req.params.nom;
     const clients = await User.find({
       nom: { $regex: nom, $options: "i" },
+      enTransition: true,
     })
       .skip(skip)
       .limit(10)
@@ -268,6 +270,34 @@ exports.updateUserState = async (req, res) => {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
     await user.updateOne({ actif: !user.actif });
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.updateDemandeState = async (req, res) => {
+  try {
+    const user = await User.findById(req.body.id);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+    const demande = Demande.find({ user: user._id, status: "en attente" });
+    if (!demande)
+      return res.status(404).json({ message: "Une erreur est survenue" });
+    if (req.body.decision != 0) {
+      const nouveauRole =
+        user.role == "client" && user.attestationProfession
+          ? "vendeur"
+          : "vendeur pro";
+
+      await user.updateOne({ role: nouveauRole, enTransition: false });
+
+      await demande.updateOne({ status: "acceptée" });
+    } else {
+      await user.updateOne({ enTransition: false });
+      await demande.updateOne({ status: "refusée", message: req.body.message });
+    }
+
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });

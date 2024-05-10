@@ -1,23 +1,5 @@
 const multer = require("multer");
 
-const MIME_TYPES = {
-  "image/jpg": "jpg",
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "application/pdf": "pdf",
-};
-
-const storage = multer.diskStorage({
-  destination: (req, file, callback) => {
-    callback(null, "public/uploads/photos/" + file.originalname);
-  },
-  filename: (req, file, callback) => {
-    const name = file.originalname.split(" ").join("_");
-    const extension = MIME_TYPES[file.mimetype];
-    callback(null, name + Date.now() + "." + extension);
-  },
-});
-
 const storageCat = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "public/uploads/images/categories");

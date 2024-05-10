@@ -1,4 +1,5 @@
-const AdminRouter = require("express").Router();
+const express = require("express");
+const AdminRouter = express.Router();
 const adminController = require("../controllers/admin/adminController");
 
 const cat_file_mid = require("../middleware/multer-config").upload_cat_config;
@@ -48,6 +49,11 @@ AdminRouter.get("/updateServiceState/:id", adminController.updateServiceState);
 AdminRouter.get(
   "/updateCategorieState/:id",
   adminController.updateCategorieState
+);
+AdminRouter.post(
+  "/updateDemandeState",
+  serv_file_mid.any(),
+  adminController.updateDemandeState
 );
 AdminRouter.get("/updateUserState/:id", adminController.updateUserState);
 AdminRouter.get(

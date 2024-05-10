@@ -10,6 +10,7 @@ const indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
 const adminRouter = require("./routes/admin");
 const cors = require("cors");
+const bodyParser = require("body-parser");
 const app = express();
 
 main().catch((err) => console.log(err));
@@ -26,6 +27,7 @@ app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 const whitelist = ["http://localhost:5173", "http://127.0.0.1:5173"];

@@ -52,7 +52,7 @@ exports.becomeProSeller = async (req, res, next) => {
         message: "Document reçu. Attendez la modération",
       });
     } else {
-      res.status(404).json({
+      res.status(401).json({
         message: "Vous n'êtes pas autorisé",
       });
     }
