@@ -5,6 +5,7 @@ const User = require("../../models/user");
 const { getCurrentUser } = require("../../utils/getCurrentUser");
 const Materiau = require("../../models/Materiau");
 const Demande = require("../../models/demande");
+const Retrait = require("../../models/retrait");
 exports.becomeSeller = async (req, res, next) => {
   try {
     const user = await getCurrentUser(req);
@@ -162,5 +163,30 @@ exports.updateService = async (req, res) => {
     res.status(200).json(service);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.makeRetrait = async (req, res) => {
+  try {
+    const montant = req.body.montant;
+    const user = await req.user.populate("portefeuille");
+
+    if (user.role == "client" || montant > user.portefeuille.montant)
+      return res
+        .status(404)
+        .json({ message: "Vous ne pouvez pas effectuer ce retrait" });
+
+    const retrait_existant = await Retrait.find({
+      etat: "En attente",
+      vendeur: user,
+    });
+    if (retrait_existant)
+      return res
+        .status(401)
+        .json({ message: "Vous avez déjà une demande de retrait en attente" });
+    const retrait = await Retrait.create({ vendeur: user, montant: montant });
+    res.status(201).json(retrait);
+  } catch (error) {
+    res.status(500).json({ message: error });
   }
 };

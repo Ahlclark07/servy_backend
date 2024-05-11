@@ -5,6 +5,9 @@ const appRoot = require("app-root-path");
 const Service = require("../../models/Service");
 const User = require("../../models/user");
 const Demande = require("../../models/demande");
+const ServicePrestataire = require("../../models/servicePrestataire");
+const Retrait = require("../../models/retrait");
+const Portefeuille = require("../../models/portefeuille");
 // Méthode pour créer une nouvelle catégorie de service
 exports.createCategorieDeService = async (req, res) => {
   try {
@@ -436,7 +439,14 @@ exports.updateDemandeState = async (req, res) => {
           ? "vendeur"
           : "vendeur pro";
 
-      await user.updateOne({ role: nouveauRole, enTransition: false });
+      const portefeuille =
+        user.portefeuille ?? (await Portefeuille.create({ montant: 0 }));
+
+      await user.updateOne({
+        role: nouveauRole,
+        enTransition: false,
+        portefeuille: portefeuille,
+      });
 
       await demande.updateOne({ status: "acceptée" });
     } else {
@@ -449,4 +459,91 @@ exports.updateDemandeState = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-const ServicePrestataire = require("../../models/servicePrestataire");
+
+exports.getRetraits = async (req, res) => {
+  try {
+    const skip = req.params.skip || 0;
+    const nom =
+      req.params.nom == " " || req.params.nom == "%20" ? "" : req.params.nom;
+    let retraits = null;
+    if (nom != "") {
+      const vendeurs = await User.find({
+        nom: { $regex: nom, $options: "i" },
+        role: { $in: ["vendeur", "vendeur pro"] },
+      });
+      retraits = await Retrait.find({
+        vendeur: { $in: vendeurs },
+        verifie: { $in: ["En attente", "Accepté"] },
+      })
+        .skip(skip)
+        .limit(10)
+        .populate({
+          path: "vendeur",
+          select: "nom prenoms nom_complet role portefeuille",
+          populate: {
+            path: "portefeuille",
+            model: "Portefeuille", // Assure-toi que c'est le bon modèle
+          },
+        })
+        .exec();
+    } else {
+      retraits = await Retrait.find({
+        etat: "En attente",
+      })
+        .skip(skip)
+        .limit(10)
+        .populate({
+          path: "vendeur",
+          select: "nom prenoms nom_complet role portefeuille",
+          populate: {
+            path: "portefeuille",
+            model: "Portefeuille", // Assure-toi que c'est le bon modèle
+          },
+        })
+        .exec();
+    }
+    const total = await Retrait.countDocuments({ etat: "En attente" });
+    res.status(200).json({ retraits, total });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.updateRetraitState = async (req, res) => {
+  try {
+    const retrait = await Retrait.findById(req.body.id).populate({
+      path: "vendeur",
+      select: "nom prenoms nom_complet role portefeuille",
+      populate: {
+        path: "portefeuille",
+        model: "Portefeuille", // Assure-toi que c'est le bon modèle
+      },
+    });
+    if (!retrait || retrait.etat != "En attente") {
+      return res
+        .status(404)
+        .json({ message: "Demande de retrait non trouvé ou non compatible." });
+    }
+    const portefeuille = retrait.vendeur.portefeuille;
+    if (!portefeuille)
+      return res.status(500).json({ message: "Une erreur est survenue" });
+    if (req.body.decision != 0) {
+      const nouveau_solde = portefeuille.montant - retrait.montant;
+
+      await portefeuille.updateOne({ montant: nouveau_solde });
+      await retrait.updateOne({
+        etat: "validé",
+        message: "Demande de retrait validée avec succès.",
+      });
+    } else {
+      await retrait.updateOne({
+        status: "refusé",
+        message: "Demande de retrait non valide. " + req.body.message,
+      });
+    }
+
+    res.status(200).json();
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -63,4 +63,10 @@ UsersRouter.post(
   middleware.decodeToken,
   userController.placeOrder
 );
+UsersRouter.post(
+  "/makeRetrait",
+  middleware.decodeToken,
+  vendeurController.makeRetrait
+);
+
 module.exports = UsersRouter;

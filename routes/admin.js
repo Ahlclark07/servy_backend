@@ -91,5 +91,11 @@ AdminRouter.get(
   adminController.getAllClientsEnTransition
 );
 AdminRouter.get("/getUsers/:role/:nom/:skip", adminController.getUsers);
+AdminRouter.get("/getRetraits/:nom/:skip", adminController.getRetraits);
 
+AdminRouter.post(
+  "/updateRetraitState",
+  serv_file_mid.any(),
+  adminController.updateRetraitState
+);
 module.exports = AdminRouter;

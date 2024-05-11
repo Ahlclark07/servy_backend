@@ -64,6 +64,10 @@ const userSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
+  portefeuille: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Portefeuille",
+  },
   adresses: [{ type: mongoose.Schema.Types.ObjectId, ref: "adresse" }],
 });
 
