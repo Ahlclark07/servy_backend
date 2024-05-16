@@ -11,7 +11,7 @@ const servicePrestataireSchema = new Schema({
   },
   vendeur: {
     type: Schema.Types.ObjectId,
-    ref: "user",
+    ref: "User",
     required: true,
   },
   description: String,

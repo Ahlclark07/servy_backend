@@ -16,6 +16,10 @@ const commandeSchema = new mongoose.Schema({
     enum: ["non_payer", "en_attente", "en_cours", "terminee", "annulee"], // Exemples de statuts possibles
     default: "non_payer",
   },
+  id_transaction:{
+    type: String,
+    required: true,
+  },
   dateCreation: {
     type: Date,
     default: Date.now,
@@ -25,6 +29,12 @@ const commandeSchema = new mongoose.Schema({
   },
   dateFinReelle: {
     type: Date,
+  },
+  demandeAnnulation: {
+    type: Boolean,
+  },
+  demandeValidation:{
+    type: Boolean,
   },
   evaluation: {
     type: Number,

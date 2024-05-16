@@ -87,30 +87,64 @@ exports.placeOrder = async (req, res, next) => {
     const user = req.user;
     req.body.client = user;
     const service = await ServicePrestataire.findById(req.body.service);
-
-    console.log(service);
-    const nouvelleCommande = await Commande.create(req.body);
-
+    if(!service){
+      throw new Error("Service introuvable")
+    }
     FedaPay.setApiKey(process.env.FEDAPAY_API_SECRET_KEY);
-    FedaPay.setEnvironment("sandbox");
+    FedaPay.setEnvironment(process.env.FEDAPAY_ENVIRONMENT);
     const transaction = await Transaction.create({
       description: `Commande du client ${user.nom} ${user.prenoms}`,
       amount: service.tarif,
-
+      callback_url: 'http://localhost:300/users/callback-paiement',
       currency: {
-        iso: "XOF",
+        iso: "XOF"
       },
       customer: {
-        email: user.email,
+        email: user.email
       },
     });
     const token = await transaction.generateToken();
-    await redirect(token.url);
-    if (transaction.status == "approved") {
-      console.log("Paiement effectué");
-      await nouvelleCommande.updateOne({ status: "en_attente" });
-    }
+    console.log("ok3")
+    req.body.id_transaction= transaction.id;
+    console.log("ok4")
+    const nouvelleCommande = await Commande.create(req.body)
+    res.redirect(token.url)
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.callbackPaiement = async (req, res, next) => {
+  try {
+    const { id, status } = req.query;
+    if (!id || !status) {
+      return res.status(400).json({ success: false, message: "Paramètres manquants dans l'URL de callback" });
+    }
+
+    // Trouver et mettre à jour la commande
+    let commande = await Commande.findOneAndUpdate({ id_transaction: id }, { statut: "en_attente" }, { new: true });
+    
+    if (!commande) {
+      return res.status(404).json({ success: false, message: "Commande non trouvée" });
+    }
+
+    // Populer les documents liés
+    await commande.populate({
+      path: "service",
+      populate: {
+        path: "vendeur",
+        populate: {
+          path: "portefeuille",
+        }
+      }
+    })
+    commande.service.vendeur.portefeuille.montantEnAttente += (commande.service.tarif * 0.9);
+    
+    await commande.service.vendeur.portefeuille.save();
+    res.status(200).json({ success: true, message: "Statut de la commande mis à jour avec succès", commande });
+
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour du statut de la commande :", error);
+    res.status(500).json({ success: false, message: "Une erreur est survenue lors de la mise à jour du statut de la commande" });
   }
 };

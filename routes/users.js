@@ -63,4 +63,73 @@ UsersRouter.post(
   middleware.decodeToken,
   userController.placeOrder
 );
+
+UsersRouter.get(
+  "/listOrder",
+  middleware.decodeToken,
+  vendeurController.listOrder
+);
+
+UsersRouter.get(
+  "/clientListOrder",
+  middleware.decodeToken,
+  clientController.clientListOrder
+);
+
+UsersRouter.get(
+  "/listOrderByStatus/:statut",
+  middleware.decodeToken,
+  vendeurController.listOrderByStatus
+);
+
+UsersRouter.get(
+  "/clientListOrderByStatus/:statut",
+  middleware.decodeToken,
+  clientController.clientListOrderByStatus
+);
+
+UsersRouter.patch(
+  "/validateOrder/:id",
+  middleware.decodeToken,
+  vendeurController.validateOrder
+);
+
+
+UsersRouter.patch(
+  "/cancelOrder/:id",
+  middleware.decodeToken,
+  vendeurController.cancelOrder
+);
+
+
+UsersRouter.patch(
+  "/endOrderRequest/:id",
+  middleware.decodeToken,
+  vendeurController.endOrderRequest
+);
+
+UsersRouter.patch(
+  "/endOrder/:id/:evaluation",
+  middleware.decodeToken,
+  clientController.endOrder
+);
+
+UsersRouter.patch(
+  "/clientCancelOrder/:id",
+  middleware.decodeToken,
+  clientController.clientCancelOrder
+);
+
+UsersRouter.patch(
+  "/cancelOrderRequest/:id",
+  middleware.decodeToken,
+  clientController.cancelOrderRequest
+);
+
+UsersRouter.get(
+  "/callback-paiement",
+  userController.callbackPaiement
+);
+
+
 module.exports = UsersRouter;

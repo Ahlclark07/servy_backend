@@ -1,4 +1,6 @@
-const { Int32 } = require("mongodb");
+
+
+//const { Int32 } = require("mongodb");
 const mongoose = require("mongoose");
 const uniqueValidator = require("mongoose-unique-validator");
 const { formatDate } = require("../utils/usefulFunctions");
@@ -63,6 +65,10 @@ const userSchema = new mongoose.Schema({
   dateDeNaissance: {
     type: Date,
     required: true,
+  },
+  portefeuille:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref:"Portefeuille",
   },
   adresses: [{ type: mongoose.Schema.Types.ObjectId, ref: "adresse" }],
 });
