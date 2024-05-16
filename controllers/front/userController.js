@@ -8,16 +8,18 @@ const ServicePrestataire = require("../../models/servicePrestataire");
 const { FedaPay, Transaction } = require("fedapay");
 
 const fs = require("fs");
-exports.userRole = (req, res, next) => {
-  User.findOne({ idFirebase: req.params.id })
-    .then((user) => {
-      res.status(200).json(user.role);
-    })
-    .catch((error) => {
-      res.status(404).json({
-        error: error,
-      });
-    });
+exports.userRole = async (req, res, next) => {
+  try {
+    const user = req.user;
+
+    if (user) {
+      if (!user.photoDeProfil) user.photoDeProfil = "user.jpg";
+      res.status(200).json({ user: user });
+    } else
+      res.status(404).json({ message: "Utilisateur non inscrit dans servy" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.updateUserInfo = async (req, res, next) => {

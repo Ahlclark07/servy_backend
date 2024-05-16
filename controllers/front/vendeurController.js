@@ -9,6 +9,7 @@ const Retrait = require("../../models/retrait");
 exports.becomeSeller = async (req, res, next) => {
   try {
     const user = await getCurrentUser(req);
+
     if (user.role === "client") {
       if (req.files["carteidentite"] && req.files["photodeprofil"]) {
         user.carteIdentite = req.files["carteidentite"][0].filename;
@@ -30,6 +31,7 @@ exports.becomeSeller = async (req, res, next) => {
       });
     }
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: error.message });
   }
 };
