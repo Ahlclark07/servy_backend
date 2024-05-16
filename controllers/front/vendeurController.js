@@ -7,9 +7,11 @@ const { getCurrentUser } = require("../../utils/getCurrentUser");
 const Materiau = require("../../models/Materiau");
 const Demande = require("../../models/demande");
 const { path } = require("app-root-path");
+const Retrait = require("../../models/retrait");
 exports.becomeSeller = async (req, res, next) => {
   try {
     const user = await getCurrentUser(req);
+
     if (user.role === "client") {
       if (req.files["carteidentite"] && req.files["photodeprofil"]) {
         user.carteIdentite = req.files["carteidentite"][0].filename;
@@ -31,6 +33,7 @@ exports.becomeSeller = async (req, res, next) => {
       });
     }
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -54,7 +57,7 @@ exports.becomeProSeller = async (req, res, next) => {
         message: "Document reçu. Attendez la modération",
       });
     } else {
-      res.status(404).json({
+      res.status(401).json({
         message: "Vous n'êtes pas autorisé",
       });
     }
@@ -121,6 +124,10 @@ exports.createServicePrestataire = async (req, res) => {
         req.body.audio = file.filename;
       }
     }
+    req.body.actif = req.body.verifie = false;
+
+    req.body.messageAdmin =
+      "Patientez pendant que la modération examine votre service";
     const servicePrestaire = await ServicePrestataire.create(req.body);
     return res.status(201).json(servicePrestaire);
   } catch (error) {
@@ -160,6 +167,31 @@ exports.updateService = async (req, res) => {
     res.status(200).json(service);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.makeRetrait = async (req, res) => {
+  try {
+    const montant = req.body.montant;
+    const user = await req.user.populate("portefeuille");
+
+    if (user.role == "client" || montant > user.portefeuille.montant)
+      return res
+        .status(404)
+        .json({ message: "Vous ne pouvez pas effectuer ce retrait" });
+
+    const retrait_existant = await Retrait.find({
+      etat: "En attente",
+      vendeur: user,
+    });
+    if (retrait_existant)
+      return res
+        .status(401)
+        .json({ message: "Vous avez déjà une demande de retrait en attente" });
+    const retrait = await Retrait.create({ vendeur: user, montant: montant });
+    res.status(201).json(retrait);
+  } catch (error) {
+    res.status(500).json({ message: error });
   }
 };
 

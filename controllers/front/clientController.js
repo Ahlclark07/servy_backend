@@ -7,7 +7,10 @@ const { FedaPay, Customer } = require("fedapay");
 exports.becomeClient = (req, res, next) => {
   //Récupérer le token d'authentification de l'utilisateur à partir de la requête
   const idToken = req.headers.authorization.split(" ")[1];
-
+  console.log("headers : ");
+  console.log(req.headers.authorization);
+  console.log("body : ");
+  console.log(req.body);
   // Vérifier le token d'authentification et extraire l'ID de l'utilisateur
   admin
     .auth()
@@ -15,6 +18,7 @@ exports.becomeClient = (req, res, next) => {
     .then(async (decodedToken) => {
       const userId = decodedToken.uid;
       const userEmail = decodedToken.email;
+      console.log(decodedToken);
 
       const adresse = await Adresse.create({
         departement: req.body.departement,
@@ -31,7 +35,7 @@ exports.becomeClient = (req, res, next) => {
         prenoms: req.body.prenoms,
         email: userEmail,
         telephone: req.body.telephone,
-        dateDeNaissance: req.body.dateDeNaissance,
+        dateDeNaissance: Date(req.body.dateDeNaissance),
         adresses: [adresse._id],
       });
 
@@ -51,16 +55,19 @@ exports.becomeClient = (req, res, next) => {
             },
           });
           res.status(201).json({
+            user: user,
             message: "Client enregistré avec succès!",
           });
         })
         .catch((error) => {
+          console.log(error);
           res.status(400).json({
             error: error,
           });
         });
     })
     .catch((error) => {
+      console.log(error);
       // Gérer les erreurs de vérification du token d'authentification
       res.status(401).json({
         error: "Erreur de vérification du token d'authentification",

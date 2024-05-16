@@ -4,6 +4,10 @@ const CategorieDeService = require("../../models/categorieDeService");
 const appRoot = require("app-root-path");
 const Service = require("../../models/Service");
 const User = require("../../models/user");
+const Demande = require("../../models/demande");
+const ServicePrestataire = require("../../models/servicePrestataire");
+const Retrait = require("../../models/retrait");
+const Portefeuille = require("../../models/portefeuille");
 // Méthode pour créer une nouvelle catégorie de service
 exports.createCategorieDeService = async (req, res) => {
   try {
@@ -23,6 +27,7 @@ exports.getAllCategoriesDeService = async (req, res) => {
     const skip = req.params.skip || 0;
     const nom =
       req.params.nom == " " || req.params.nom == "%20" ? "" : req.params.nom;
+
     const categories = await CategorieDeService.find({
       nom: { $regex: nom, $options: "i" },
     })
@@ -174,19 +179,6 @@ exports.getServicesByCat = async (req, res) => {
   }
 };
 
-// Méthode pour récupérer un service par son ID
-exports.getServiceById = async (req, res) => {
-  try {
-    const service = await Service.findById(req.params.id);
-    if (!service) {
-      return res.status(404).json({ message: "Service non trouvé" });
-    }
-    res.status(200).json(service);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 // Méthode pour mettre à jour un service
 exports.updateService = async (req, res) => {
   try {
@@ -217,13 +209,151 @@ exports.updateServiceState = async (req, res) => {
 
 // Méthode pour supprimer un service
 exports.deleteService = async (req, res) => {
-  ç;
   try {
     const service = await Service.findByIdAndDelete(req.params.id);
     const imagePath = service.image; // Supposons que l'image soit stockée dans la propriété "image"
 
     fs.unlinkSync(
       appRoot + "/public/uploads/images/services/" + imagePath,
+      function (err) {
+        if (err) throw err;
+        console.log("File deleted!");
+      }
+    );
+    if (!service) {
+      return res.status(404).json({ message: "Service non trouvé" });
+    }
+    res.status(200).json({ message: "Service supprimé avec succès" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getServsNameAndIds = async (req, res) => {
+  try {
+    const services = await Service.find({}).select("nom _id actif").exec();
+    const total = await Service.countDocuments();
+    res.status(200).json({ services, total });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getClientsNameAndIds = async (req, res) => {
+  try {
+    const services = await Service.find({}).select("nom _id actif").exec();
+    const total = await Service.countDocuments();
+    res.status(200).json({ services, total });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getServicesPrestataire = async (req, res) => {
+  try {
+    const skip = req.params.skip || 0;
+    const nom =
+      req.params.nom == " " || req.params.nom == "%20" ? "" : req.params.nom;
+
+    const services = await Service.find({
+      nom: { $regex: nom, $options: "i" },
+    });
+    const servicesPrestataires = await ServicePrestataire.find({
+      service: { $in: services },
+      verifie: { $in: ["En attente", "Accepté"] },
+    })
+      .skip(skip)
+      .limit(10)
+      .populate("vendeur", "nom prenoms nom_complet role")
+      .populate("service", "nom")
+      .exec();
+    const total = await ServicePrestataire.countDocuments();
+    res.status(200).json({ servicesPrestataires, total });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getServicesPrestataireByUser = async (req, res) => {
+  try {
+    const skip = req.params.skip || 0;
+    const nom =
+      req.params.nom == " " || req.params.nom == "%20" ? "" : req.params.nom;
+
+    const vendeurs = await User.find({
+      nom: { $regex: nom, $options: "i" },
+      role: { $in: ["vendeur", "vendeur pro"] },
+    });
+    console.log(vendeurs);
+    const servicesPrestataires = await ServicePrestataire.find({
+      vendeur: { $in: vendeurs },
+      verifie: { $in: ["En attente", "Accepté"] },
+    })
+      .skip(skip)
+      .limit(10)
+      .populate("vendeur", "nom prenoms nom_complet role")
+      .populate("service", "nom")
+      .exec();
+    const total = await ServicePrestataire.countDocuments();
+    res.status(200).json({ servicesPrestataires, total });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getServicesPrestataireByServ = async (req, res) => {
+  try {
+    const skip = req.params.skip || 0;
+
+    const servicesPrestataires = await ServicePrestataire.find({
+      service: req.params.service,
+      verifie: { $in: ["En attente", "Accepté"] },
+    })
+      .skip(skip)
+      .limit(10)
+      .populate("vendeur", "nom prenoms nom_complet role")
+      .populate("service", "nom")
+      .exec();
+
+    const total = await ServicePrestataire.countDocuments();
+    console.log({ servicesPrestataires, total });
+    res.status(200).json({ servicesPrestataires, total });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.updateServicePrestataireState = async (req, res) => {
+  try {
+    const service = await ServicePrestataire.findById(req.body.id);
+    if (!service) {
+      return res.status(404).json({ message: "Service non trouvé" });
+    }
+    const decision = req.body.decision;
+    if (decision != 0) {
+      await service.updateOne({
+        verifie: "Accepté",
+        messageAdmin: "Vous êtes prêt à vendre votre service !",
+      });
+    } else {
+      await service.updateOne({
+        verifie: "Refusé",
+        messageAdmin: req.body.message,
+      });
+    }
+    res.status(200).json(service);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Méthode pour supprimer un service
+exports.deleteServicePrestataire = async (req, res) => {
+  try {
+    const service = await ServicePrestataire.findByIdAndDelete(req.params.id);
+    const imagePath = service.image; // Supposons que l'image soit stockée dans la propriété "image"
+
+    fs.unlinkSync(
+      appRoot + "/public/uploads/images/servicesprestataires/" + imagePath,
       function (err) {
         if (err) throw err;
         console.log("File deleted!");
@@ -248,6 +378,7 @@ exports.getAllClientsEnTransition = async (req, res) => {
       req.params.nom == " " || req.params.nom == "%20" ? "" : req.params.nom;
     const clients = await User.find({
       nom: { $regex: nom, $options: "i" },
+      enTransition: true,
     })
       .skip(skip)
       .limit(10)
@@ -255,6 +386,26 @@ exports.getAllClientsEnTransition = async (req, res) => {
       .exec();
     const total = await User.countDocuments();
 
+    res.status(200).json({ clients, total });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.getUsers = async (req, res) => {
+  try {
+    const skip = req.params.skip || 0;
+    const nom =
+      req.params.nom == " " || req.params.nom == "%20" ? "" : req.params.nom;
+
+    const clients = await User.find({
+      nom: { $regex: nom, $options: "i" },
+      role: { $regex: req.params.role, $options: "i" },
+    })
+      .skip(skip)
+      .limit(10)
+      .populate("adresses")
+      .exec();
+    const total = await User.countDocuments();
     res.status(200).json({ clients, total });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -273,78 +424,125 @@ exports.updateUserState = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-const ServicePrestataire = require("../../models/servicePrestataire");
-
-// Méthode pour récupérer tous les services prestataires
-exports.getAllServicesPrestataires = async (req, res) => {
+exports.updateDemandeState = async (req, res) => {
   try {
-    const servicesPrestataires = await ServicePrestataire.find();
-    res.status(200).json(servicesPrestataires);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Méthode pour récupérer un service prestataire par son ID
-exports.getServicePrestataireById = async (req, res) => {
-  try {
-    const servicePrestataire = await ServicePrestataire.findById(req.params.id);
-    if (!servicePrestataire) {
-      return res
-        .status(404)
-        .json({ message: "Service prestataire non trouvé" });
+    const user = await User.findById(req.body.id);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
-    res.status(200).json(servicePrestataire);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+    const demande = Demande.find({ user: user._id, status: "en attente" });
+    if (!demande)
+      return res.status(404).json({ message: "Une erreur est survenue" });
+    if (req.body.decision != 0) {
+      const nouveauRole =
+        user.role == "client" && user.attestationProfession
+          ? "vendeur"
+          : "vendeur pro";
 
-// Méthode pour mettre à jour un service prestataire
-exports.updateServicePrestataire = async (req, res) => {
-  try {
-    const servicePrestataire = await ServicePrestataire.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    if (!servicePrestataire) {
-      return res
-        .status(404)
-        .json({ message: "Service prestataire non trouvé" });
+      const portefeuille =
+        user.portefeuille ?? (await Portefeuille.create({ montant: 0 }));
+
+      await user.updateOne({
+        role: nouveauRole,
+        enTransition: false,
+        portefeuille: portefeuille,
+      });
+
+      await demande.updateOne({ status: "acceptée" });
+    } else {
+      await user.updateOne({ enTransition: false });
+      await demande.updateOne({ status: "refusée", message: req.body.message });
     }
-    res.status(200).json(servicePrestataire);
+
+    res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Méthode pour supprimer un service prestataire
-exports.deleteServicePrestataire = async (req, res) => {
+exports.getRetraits = async (req, res) => {
   try {
-    const servicePrestataire = await ServicePrestataire.findByIdAndDelete(
-      req.params.id
-    );
-    if (!servicePrestataire) {
-      return res
-        .status(404)
-        .json({ message: "Service prestataire non trouvé" });
+    const skip = req.params.skip || 0;
+    const nom =
+      req.params.nom == " " || req.params.nom == "%20" ? "" : req.params.nom;
+    let retraits = null;
+    if (nom != "") {
+      const vendeurs = await User.find({
+        nom: { $regex: nom, $options: "i" },
+        role: { $in: ["vendeur", "vendeur pro"] },
+      });
+      retraits = await Retrait.find({
+        vendeur: { $in: vendeurs },
+        verifie: { $in: ["En attente", "Accepté"] },
+      })
+        .skip(skip)
+        .limit(10)
+        .populate({
+          path: "vendeur",
+          select: "nom prenoms nom_complet role portefeuille",
+          populate: {
+            path: "portefeuille",
+            model: "Portefeuille", // Assure-toi que c'est le bon modèle
+          },
+        })
+        .exec();
+    } else {
+      retraits = await Retrait.find({
+        etat: "En attente",
+      })
+        .skip(skip)
+        .limit(10)
+        .populate({
+          path: "vendeur",
+          select: "nom prenoms nom_complet role portefeuille",
+          populate: {
+            path: "portefeuille",
+            model: "Portefeuille", // Assure-toi que c'est le bon modèle
+          },
+        })
+        .exec();
     }
-    res
-      .status(200)
-      .json({ message: "Service prestataire supprimé avec succès" });
+    const total = await Retrait.countDocuments({ etat: "En attente" });
+    res.status(200).json({ retraits, total });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ message: error.message });
   }
 };
-
-// Méthode pour récupérer tous les services prestataires d'un même service
-exports.getAllServicesPrestatairesByService = async (req, res) => {
+exports.updateRetraitState = async (req, res) => {
   try {
-    const servicesPrestataires = await ServicePrestataire.find({
-      service: req.params.serviceId,
+    const retrait = await Retrait.findById(req.body.id).populate({
+      path: "vendeur",
+      select: "nom prenoms nom_complet role portefeuille",
+      populate: {
+        path: "portefeuille",
+        model: "Portefeuille", // Assure-toi que c'est le bon modèle
+      },
     });
-    res.status(200).json(servicesPrestataires);
+    if (!retrait || retrait.etat != "En attente") {
+      return res
+        .status(404)
+        .json({ message: "Demande de retrait non trouvé ou non compatible." });
+    }
+    const portefeuille = retrait.vendeur.portefeuille;
+    if (!portefeuille)
+      return res.status(500).json({ message: "Une erreur est survenue" });
+    if (req.body.decision != 0) {
+      const nouveau_solde = portefeuille.montant - retrait.montant;
+
+      await portefeuille.updateOne({ montant: nouveau_solde });
+      await retrait.updateOne({
+        etat: "validé",
+        message: "Demande de retrait validée avec succès.",
+      });
+    } else {
+      await retrait.updateOne({
+        status: "refusé",
+        message: "Demande de retrait non valide. " + req.body.message,
+      });
+    }
+
+    res.status(200).json();
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

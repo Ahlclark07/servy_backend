@@ -1,4 +1,5 @@
-const AdminRouter = require("express").Router();
+const express = require("express");
+const AdminRouter = express.Router();
 const adminController = require("../controllers/admin/adminController");
 
 const cat_file_mid = require("../middleware/multer-config").upload_cat_config;
@@ -25,16 +26,15 @@ AdminRouter.post(
   cat_file_mid.single("image"),
   adminController.updateCategorieDeService
 );
-AdminRouter.get("/getServices/:nom/:skip", adminController.getServices);
-AdminRouter.get(
-  "/getServicesByCat/:categorie/:skip",
-  adminController.getServicesByCat
-);
-
 AdminRouter.post(
   "/createService",
   serv_file_mid.single("image"),
   adminController.createService
+);
+AdminRouter.get("/getServices/:nom/:skip", adminController.getServices);
+AdminRouter.get(
+  "/getServicesByCat/:categorie/:skip",
+  adminController.getServicesByCat
 );
 AdminRouter.get("/supprimerService/:id", adminController.deleteService);
 AdminRouter.post(
@@ -42,17 +42,60 @@ AdminRouter.post(
   serv_file_mid.single("image"),
   adminController.updateService
 );
+AdminRouter.get("/updateServiceState/:id", adminController.updateServiceState);
+
+AdminRouter.get(
+  "/getServicesPrestataire/:nom/:skip",
+  adminController.getServicesPrestataire
+);
+AdminRouter.get(
+  "/getServicesPrestataireByUser/:nom/:skip",
+  adminController.getServicesPrestataireByUser
+);
+AdminRouter.get("/getServices/", adminController.getServsNameAndIds);
+AdminRouter.get(
+  "/getServicesPrestataireByServ/:service/:skip",
+  adminController.getServicesPrestataireByServ
+);
+
+AdminRouter.get(
+  "/supprimerServicePrestataire/:id",
+  adminController.deleteServicePrestataire
+);
+AdminRouter.post(
+  "/updateServicePrestataire",
+  serv_file_mid.single("image"),
+  adminController.updateServicePrestataireState
+);
+AdminRouter.post(
+  "/updateServicePrestataireState",
+  serv_file_mid.any(),
+  adminController.updateServicePrestataireState
+);
 
 // State
-AdminRouter.get("/updateServiceState/:id", adminController.updateServiceState);
+
 AdminRouter.get(
   "/updateCategorieState/:id",
   adminController.updateCategorieState
 );
+AdminRouter.post(
+  "/updateDemandeState",
+  serv_file_mid.any(),
+  adminController.updateDemandeState
+);
+
 AdminRouter.get("/updateUserState/:id", adminController.updateUserState);
 AdminRouter.get(
   "/getClientsEnTransition/:nom/:skip",
   adminController.getAllClientsEnTransition
 );
+AdminRouter.get("/getUsers/:role/:nom/:skip", adminController.getUsers);
+AdminRouter.get("/getRetraits/:nom/:skip", adminController.getRetraits);
 
+AdminRouter.post(
+  "/updateRetraitState",
+  serv_file_mid.any(),
+  adminController.updateRetraitState
+);
 module.exports = AdminRouter;
