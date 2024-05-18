@@ -1,9 +1,9 @@
 const Portefeuille = require("../../models/portefeuille");
-const Service = require("../../models/Service");
+const Service = require("../../models/service");
 const ServicePrestataire = require("../../models/servicePrestataire");
 const User = require("../../models/user");
 const { getCurrentUser } = require("../../utils/getCurrentUser");
-const Materiau = require("../../models/Materiau");
+const Materiau = require("../../models/materiau");
 const Demande = require("../../models/demande");
 const Retrait = require("../../models/retrait");
 exports.becomeSeller = async (req, res, next) => {
@@ -68,9 +68,17 @@ exports.createMateriel = async (req, res) => {
   try {
     const materiel = await Materiau.findOne({ nom: req.body.nom });
     req.body.image = req.file.filename;
-    if (materiel) throw new Error("Existe déjà");
-    const nouveauMateriel = await Materiau.create(req.body);
-    res.status(201).json(nouveauMateriel);
+    if (materiel) {
+      materiel.nom = req.body.nom;
+      materiel.image = req.body.image;
+      materiel.prix = req.body.prix;
+      materiel.miniDescription = req.body.miniDescription;
+      await materiel.save();
+      res.status(201).json({ materiel: materiel });
+    } else {
+      const nouveauMateriel = await Materiau.create(req.body);
+      res.status(201).json({ materiel: nouveauMateriel });
+    }
   } catch (error) {
     res.status(400).json({ message: error.message, provided: req.body });
   }
@@ -104,8 +112,7 @@ exports.deleteMateriel = async (req, res) => {
 exports.createServicePrestataire = async (req, res) => {
   try {
     const vendeur = req.user;
-    console.log(vendeur);
-    if (vendeur.role != "vendeur" && vendeur.role != "vendeur pro")
+    if (vendeur.role != "vendeur" && vendeur.role != "vendeur pro" && false)
       return res
         .status(400)
         .json({ message: "Vous n'êtes pas un vendeur", user: vendeur });
@@ -119,20 +126,35 @@ exports.createServicePrestataire = async (req, res) => {
       if (file.fieldname == "images") {
         req.body.images.push(file.filename);
       } else if (file.fieldname == "audio") {
-        req.body.audio = file.filename;
+        req.body.vocal = file.filename;
       }
     }
-    req.body.actif = req.body.verifie = false;
+    console.log(req.body);
+    req.body.actif = false;
+    req.body.verifie = "En attente";
 
     req.body.messageAdmin =
       "Patientez pendant que la modération examine votre service";
     const servicePrestaire = await ServicePrestataire.create(req.body);
-    return res.status(201).json(servicePrestaire);
+    return res.status(201).json({ service: servicePrestaire });
   } catch (error) {
+    console.log(error);
     res.status(400).json({ message: error.message, provided: req.body });
   }
 };
-
+exports.getServicesOfAPrestataire = async (req, res) => {
+  try {
+    const user = req.params.id;
+    const services = await ServicePrestataire.find({ vendeur: user })
+      .populate("service", "nom")
+      .populate("materiaux");
+    console.log(req.params.id);
+    res.status(200).json({ services: services });
+  } catch (error) {
+    console.log(error);
+    res.status(400).json({ error: error });
+  }
+};
 exports.updateServiceState = async (req, res) => {
   try {
     const service = await ServicePrestataire.findById(req.params.id);

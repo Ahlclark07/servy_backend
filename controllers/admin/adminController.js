@@ -2,7 +2,7 @@
 const fs = require("fs");
 const CategorieDeService = require("../../models/categorieDeService");
 const appRoot = require("app-root-path");
-const Service = require("../../models/Service");
+const Service = require("../../models/service");
 const User = require("../../models/user");
 const Demande = require("../../models/demande");
 const ServicePrestataire = require("../../models/servicePrestataire");
@@ -238,15 +238,7 @@ exports.getServsNameAndIds = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-exports.getClientsNameAndIds = async (req, res) => {
-  try {
-    const services = await Service.find({}).select("nom _id actif").exec();
-    const total = await Service.countDocuments();
-    res.status(200).json({ services, total });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+
 exports.getServicesPrestataire = async (req, res) => {
   try {
     const skip = req.params.skip || 0;

@@ -5,6 +5,7 @@ const admin = require("../../config/firebase-config");
 const { getCurrentUser } = require("../../utils/getCurrentUser");
 const FcmToken = require("../../models/fcmToken.js");
 const ServicePrestataire = require("../../models/servicePrestataire");
+const Service = require("../../models/service");
 const { FedaPay, Transaction } = require("fedapay");
 
 const fs = require("fs");
@@ -17,6 +18,36 @@ exports.userRole = async (req, res, next) => {
       res.status(200).json({ user: user });
     } else
       res.status(404).json({ message: "Utilisateur non inscrit dans servy" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.servicesList = async (req, res, next) => {
+  try {
+    const services = await Service.find({});
+    res.status(200).json({ services: services });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.ServicePrestataireList = async (req, res, next) => {
+  try {
+    const services = await ServicePrestataire.find({})
+      .limit(10)
+      .populate("vendeur", "nom photoDeProfil prenoms nom_complet profession")
+      .populate("service", "nom")
+      .populate("materiaux");
+    res.status(200).json({ services: services });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.VendeursList = async (req, res, next) => {
+  try {
+    const vendeurs = await User.find({
+      role: { $in: ["vendeur", "vendeur pro"] },
+    }).limit(10);
+    res.status(200).json({ vendeurs: vendeurs });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

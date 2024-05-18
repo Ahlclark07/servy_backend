@@ -16,6 +16,16 @@ UsersRouter.get("/", function (req, res, next) {
 });
 
 UsersRouter.get("/getUser", middleware.decodeToken, userController.userRole);
+UsersRouter.get(
+  "/servicesList",
+  middleware.decodeToken,
+  userController.servicesList
+);
+UsersRouter.get("/vendeursList", userController.VendeursList);
+UsersRouter.get(
+  "/servicesPrestatairesList",
+  userController.ServicePrestataireList
+);
 UsersRouter.post(
   "/becomeClient",
   serv_file_mid.any(),
@@ -58,6 +68,11 @@ UsersRouter.post(
   middleware.decodeToken,
   service_presta_files_mid.any(),
   vendeurController.createServicePrestataire
+);
+UsersRouter.get(
+  "/getservicesofaprestataire/:id",
+
+  vendeurController.getServicesOfAPrestataire
 );
 
 UsersRouter.post(
