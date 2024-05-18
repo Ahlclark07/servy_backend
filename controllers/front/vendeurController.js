@@ -1,10 +1,12 @@
 const Portefeuille = require("../../models/portefeuille");
 const Service = require("../../models/service");
+const Commande = require("../../models/commande");
 const ServicePrestataire = require("../../models/servicePrestataire");
 const User = require("../../models/user");
 const { getCurrentUser } = require("../../utils/getCurrentUser");
 const Materiau = require("../../models/materiau");
 const Demande = require("../../models/demande");
+const { path } = require("app-root-path");
 const Retrait = require("../../models/retrait");
 exports.becomeSeller = async (req, res, next) => {
   try {
@@ -212,5 +214,111 @@ exports.makeRetrait = async (req, res) => {
     res.status(201).json(retrait);
   } catch (error) {
     res.status(500).json({ message: error });
+  }
+};
+
+exports.listOrder = async (req, res, next) => {
+  try {
+    user = req.user;
+    listCommande = [];
+    if (user.role === "client") throw new error("Acccès interdit");
+    else
+      listCommande = await Commande.find().populate({
+        path: "service",
+        match: { vendeur: user._id },
+      });
+    listCommande = listCommande.filter((commande) => commande.service !== null);
+    res.send(listCommande);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.listOrderByStatus = async (req, res, next) => {
+  try {
+    user = req.user;
+    listCommande = [];
+    if (user.role === "client") throw new error("Accès interdit");
+    else
+      listCommande = await Commande.find({
+        statut: req.params.statut,
+      }).populate({
+        path: "service",
+        match: { vendeur: user._id },
+      });
+    listCommande = listCommande.filter((commande) => commande.service !== null);
+    res.send(listCommande);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.validateOrder = async (req, res, next) => {
+  try {
+    user = req.user;
+    if (user.role === "client") {
+      throw new Error("Accès interdit");
+    }
+    commande = await Commande.findOne({ _id: req.params.id }).populate(
+      "service"
+    );
+    console.log(typeof commande.service.vendeur);
+    console.log(typeof user._id);
+    if (String(commande.service.vendeur) == String(user._id)) {
+      await commande.updateOne({ statut: "en_cours" });
+      res.status(201).send("Commande validée");
+    } else {
+      throw new Error("Accès interdit ");
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.cancelOrder = async (req, res, next) => {
+  try {
+    user = req.user;
+    commande = await Commande.findOne({ _id: req.params.id }).populate({
+      path: "service",
+      populate: {
+        path: "vendeur",
+        populate: {
+          path: "portefeuille",
+        },
+      },
+    });
+    if (String(commande.service.vendeur._id) == String(user._id)) {
+      await commande.updateOne({ statut: "annulee" });
+      commande.service.vendeur.portefeuille.montantEnAttente -=
+        commande.service.tarif * 0.9;
+
+      await commande.service.vendeur.portefeuille.save();
+      res.status(201).send("Commande annulée");
+    } else {
+      throw new Error("Accès interdit ");
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.endOrderRequest = async (req, res, next) => {
+  try {
+    user = req.user;
+
+    commande = await Commande.findOne({ _id: req.params.id });
+
+    commande = await Commande.findOne({ _id: req.params.id }).populate(
+      "service"
+    );
+    if (String(commande.service.vendeur) == String(user._id)) {
+      commande.demandeValidation = true;
+      await commande.save();
+      res.send(commande);
+    } else {
+      throw new Error("Accès interdit ");
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

@@ -8,6 +8,11 @@ const portefeuilleSchema = new Schema({
     type: Number,
     required: true,
   },
+  montantEnAttente: {
+    type: Number,
+    default: 0,
+    required: true,
+  },
   actif: {
     type: Boolean,
     default: false,
