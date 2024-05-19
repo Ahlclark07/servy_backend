@@ -3,16 +3,15 @@ const createError = require("http-errors");
 const express = require("express");
 const path = require("path");
 const cookieParser = require("cookie-parser");
-const bodyParser = require('body-parser');
+const bodyParser = require("body-parser");
 const logger = require("morgan");
-const { Webhook } = require('fedapay')
+const { Webhook } = require("fedapay");
 const mongoose = require("mongoose");
 
 const indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
 const adminRouter = require("./routes/admin");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const app = express();
 const endpointSecret = process.env.FEDAPAY_TRANSACTION_WEBHOOK;
 

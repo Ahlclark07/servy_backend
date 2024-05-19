@@ -26,6 +26,11 @@ UsersRouter.get(
   "/servicesPrestatairesList",
   userController.ServicePrestataireList
 );
+UsersRouter.get(
+  "/getVendeurServiceBySearch/:nom",
+  userController.getVendeurServiceBySearch
+);
+
 UsersRouter.post(
   "/becomeClient",
   serv_file_mid.any(),
@@ -111,13 +116,11 @@ UsersRouter.patch(
   vendeurController.validateOrder
 );
 
-
 UsersRouter.patch(
   "/cancelOrder/:id",
   middleware.decodeToken,
   vendeurController.cancelOrder
 );
-
 
 UsersRouter.patch(
   "/endOrderRequest/:id",
@@ -143,11 +146,7 @@ UsersRouter.patch(
   clientController.cancelOrderRequest
 );
 
-UsersRouter.get(
-  "/callback-paiement",
-  userController.callbackPaiement
-);
-
+UsersRouter.get("/callback-paiement", userController.callbackPaiement);
 
 UsersRouter.post(
   "/makeRetrait",
