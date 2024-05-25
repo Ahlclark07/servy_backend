@@ -71,7 +71,9 @@ exports.VendeursList = async (req, res, next) => {
     const vendeurs = await User.find({
       role: { $in: ["vendeur", "vendeur pro"] },
       actif: true,
-    }).limit(10);
+    })
+      .limit(10)
+      .populate("adresses");
     res.status(200).json({ vendeurs: vendeurs });
   } catch (error) {
     res.status(500).json({ message: error.message });

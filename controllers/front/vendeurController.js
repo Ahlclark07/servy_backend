@@ -133,7 +133,7 @@ exports.createServicePrestataire = async (req, res) => {
         req.body.vocal = file.filename;
       }
     }
-    req.body.actif = false;
+    req.body.actif = true;
     req.body.verifie = "En attente";
 
     req.body.messageAdmin =
