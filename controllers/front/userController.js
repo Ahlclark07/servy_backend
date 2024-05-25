@@ -17,7 +17,7 @@ exports.userRole = async (req, res, next) => {
     if (user) {
       if (!user.photoDeProfil) user.photoDeProfil = "user.jpg";
       const demande = await Demande.findOne({
-        vendeur: user,
+        user: user,
         status: { $in: ["en attente", "refusée"] },
       });
       if (demande) user.demande = demande;
