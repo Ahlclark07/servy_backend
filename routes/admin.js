@@ -5,7 +5,6 @@ const adminController = require("../controllers/admin/adminController");
 const cat_file_mid = require("../middleware/multer-config").upload_cat_config;
 const serv_file_mid =
   require("../middleware/multer-config").upload_service_config;
-const image_resizer = require("../middleware/multer-config").image_resizer;
 AdminRouter.get(
   "/getCategories/:nom/:skip",
   adminController.getAllCategoriesDeService
@@ -15,7 +14,6 @@ AdminRouter.get("/getCategories/", adminController.getCatsNameAndIds);
 AdminRouter.post(
   "/createCategorie",
   cat_file_mid.single("image"),
-  image_resizer,
   adminController.createCategorieDeService
 );
 AdminRouter.get(
