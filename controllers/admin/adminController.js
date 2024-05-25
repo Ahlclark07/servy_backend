@@ -57,7 +57,7 @@ exports.getCatsNameAndIds = async (req, res) => {
 // Méthode pour mettre à jour une catégorie de service
 exports.updateCategorieDeService = async (req, res) => {
   try {
-    req.body.image = req.file.filename;
+    if (req.body.filename) req.body.image = req.file.filename;
     const categorie = await CategorieDeService.findByIdAndUpdate(
       req.body._id,
       req.body,

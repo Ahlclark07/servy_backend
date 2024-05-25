@@ -114,7 +114,7 @@ exports.deleteMateriel = async (req, res) => {
 exports.createServicePrestataire = async (req, res) => {
   try {
     const vendeur = req.user;
-    if (vendeur.role != "vendeur" && vendeur.role != "vendeur pro" && false)
+    if (vendeur.role != "vendeur" && vendeur.role != "vendeur pro")
       return res
         .status(400)
         .json({ message: "Vous n'êtes pas un vendeur", user: vendeur });
@@ -131,7 +131,6 @@ exports.createServicePrestataire = async (req, res) => {
         req.body.vocal = file.filename;
       }
     }
-    console.log(req.body);
     req.body.actif = false;
     req.body.verifie = "En attente";
 
@@ -149,6 +148,7 @@ exports.getServicesOfAPrestataire = async (req, res) => {
     const user = req.params.id;
     const services = await ServicePrestataire.find({ vendeur: user })
       .populate("service", "nom")
+      .populate("vendeur")
       .populate("materiaux");
     console.log(req.params.id);
     res.status(200).json({ services: services });

@@ -82,6 +82,8 @@ UsersRouter.get(
 
 UsersRouter.post(
   "/placeOrder",
+  service_presta_files_mid.any(),
+
   middleware.decodeToken,
   userController.placeOrder
 );
@@ -147,6 +149,11 @@ UsersRouter.patch(
 );
 
 UsersRouter.get("/callback-paiement", userController.callbackPaiement);
+UsersRouter.get(
+  "/listcommandes",
+  middleware.decodeToken,
+  userController.listCommandes
+);
 
 UsersRouter.post(
   "/makeRetrait",

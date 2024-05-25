@@ -18,7 +18,14 @@ const endpointSecret = process.env.FEDAPAY_TRANSACTION_WEBHOOK;
 main().catch((err) => console.log(err));
 
 async function main() {
-  await mongoose.connect("mongodb://127.0.0.1:27017/servy");
+  const uri = `mongodb+srv://${process.env.MONGO_USERNAME}:${process.env.MONGO_PASSWORD}@cluster0.z8ickoa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+  const clientOptions = {
+    serverApi: { version: "1", strict: true, deprecationErrors: true },
+  };
+  await mongoose.connect(uri, clientOptions);
+  // await mongoose.connection.db.admin().command({ ping: 1 });
+  console.log("Pinged your deployment. You successfully connected to MongoDB!");
+  // await mongoose.connect("mongodb://127.0.0.1:27017/servy");
 }
 
 // // view engine setup

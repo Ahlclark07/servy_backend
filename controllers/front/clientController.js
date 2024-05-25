@@ -43,17 +43,17 @@ exports.becomeClient = (req, res, next) => {
       user
         .save()
         .then(async () => {
-          FedaPay.setApiKey(process.env.FEDAPAY_API_SECRET_KEY);
-          FedaPay.setEnvironment(process.env.FEDAPAY_ENVIRONMENT);
-          const customer = await Customer.create({
-            firstname: user.prenoms,
-            lastname: user.nom,
-            email: user.email,
-            phone_number: {
-              number: user.telephone,
-              country: "BJ",
-            },
-          });
+          // FedaPay.setApiKey(process.env.FEDAPAY_API_SECRET_KEY);
+          // FedaPay.setEnvironment(process.env.FEDAPAY_ENVIRONMENT);
+          // const customer = await Customer.create({
+          //   firstname: user.prenoms,
+          //   lastname: user.nom,
+          //   email: user.email,
+          //   phone_number: {
+          //     number: user.telephone,
+          //     country: "BJ",
+          //   },
+          // });
           res.status(201).json({
             user: user,
             message: "Client enregistré avec succès!",
@@ -62,7 +62,7 @@ exports.becomeClient = (req, res, next) => {
         .catch((error) => {
           console.log(error);
           res.status(400).json({
-            error: error,
+            error: error.message,
           });
         });
     })
@@ -77,10 +77,12 @@ exports.becomeClient = (req, res, next) => {
 
 exports.clientListOrder = async (req, res, next) => {
   try {
-    user=req.user;
-    listCommande=[]
-    listCommande= await Commande.find({'client' : user._id }).populate("service")
-    res.send(listCommande)
+    user = req.user;
+    listCommande = [];
+    listCommande = await Commande.find({ client: user._id }).populate(
+      "service"
+    );
+    res.send(listCommande);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -88,10 +90,13 @@ exports.clientListOrder = async (req, res, next) => {
 
 exports.clientListOrderByStatus = async (req, res, next) => {
   try {
-    user=req.user;
-    listCommande=[]
-    listCommande= await Commande.find({'client' : user._id , 'statut' : req.params.statut }).populate("service")
-    res.send(listCommande)
+    user = req.user;
+    listCommande = [];
+    listCommande = await Commande.find({
+      client: user._id,
+      statut: req.params.statut,
+    }).populate("service");
+    res.send(listCommande);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -99,73 +104,76 @@ exports.clientListOrderByStatus = async (req, res, next) => {
 
 exports.clientCancelOrder = async (req, res, next) => {
   try {
-    user=req.user;
-    commande = await Commande.findOne({'_id': req.params.id})
-    if(String(commande.client) == String(user._id)){
-      await commande.updateOne({statut: "annulee"})
-      res.status(201).send("Commande annulée")
+    user = req.user;
+    commande = await Commande.findOne({ _id: req.params.id });
+    if (String(commande.client) == String(user._id)) {
+      await commande.updateOne({ statut: "annulee" });
+      res.status(201).send("Commande annulée");
       await commande.populate({
         path: "service",
         populate: {
           path: "vendeur",
           populate: {
             path: "portefeuille",
-          }
-        }
-      })
-      commande.service.vendeur.portefeuille.montantEnAttente -= (commande.service.tarif * 0.9);
-  
+          },
+        },
+      });
+      commande.service.vendeur.portefeuille.montantEnAttente -=
+        commande.service.tarif * 0.9;
+
       await commande.service.vendeur.portefeuille.save();
-    }
-    else{
+    } else {
       throw new Error("Accès interdit ");
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-}
+};
 
 exports.cancelOrderRequest = async (req, res, next) => {
   try {
-    user=req.user;
-    commande = await Commande.findOne({'_id': req.params.id});
-    if(String(commande.client) == String(user._id)){
-      commande.demandeAnnulation= true;
+    user = req.user;
+    commande = await Commande.findOne({ _id: req.params.id });
+    if (String(commande.client) == String(user._id)) {
+      commande.demandeAnnulation = true;
       await commande.save();
-      res.status(200).json({commande});
-    }
-    else{
-      throw new error("Accès interdit")
+      res.status(200).json({ commande });
+    } else {
+      throw new error("Accès interdit");
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-}
+};
 
 exports.endOrder = async (req, res, next) => {
   try {
-      user= req.user
-      commande = await Commande.findOne({'_id': req.params.id})
-      if(String(commande.client) == String(user._id)){
-        await commande.updateOne({statut: "terminee", evaluation: req.params.evaluation})
-        await commande.populate({
-          path: "service",
+    user = req.user;
+    commande = await Commande.findOne({ _id: req.params.id });
+    if (String(commande.client) == String(user._id)) {
+      await commande.updateOne({
+        statut: "terminee",
+        evaluation: req.params.evaluation,
+      });
+      await commande.populate({
+        path: "service",
+        populate: {
+          path: "vendeur",
           populate: {
-            path: "vendeur",
-            populate: {
-              path: "portefeuille",
-            }
-          }
-        })
-        commande.service.vendeur.portefeuille.montantEnAttente -= (commande.service.tarif * 0.9);
-        commande.service.vendeur.portefeuille.montant += (commande.service.tarif * 0.9)
-        await commande.service.vendeur.portefeuille.save();
-        res.status(201).send("Commande terminée")
-      }
-      else{
-        throw new Error("Accès interdit ");
-      }
+            path: "portefeuille",
+          },
+        },
+      });
+      commande.service.vendeur.portefeuille.montantEnAttente -=
+        commande.service.tarif * 0.9;
+      commande.service.vendeur.portefeuille.montant +=
+        commande.service.tarif * 0.9;
+      await commande.service.vendeur.portefeuille.save();
+      res.status(201).send("Commande terminée");
+    } else {
+      throw new Error("Accès interdit ");
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
-  }  
-}
+  }
+};

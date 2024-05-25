@@ -1,5 +1,6 @@
 const User = require("../../models/user");
 const Commande = require("../../models/commande");
+const Demande = require("../../models/demande");
 
 const admin = require("../../config/firebase-config");
 const { getCurrentUser } = require("../../utils/getCurrentUser");
@@ -15,11 +16,30 @@ exports.userRole = async (req, res, next) => {
 
     if (user) {
       if (!user.photoDeProfil) user.photoDeProfil = "user.jpg";
+      const demande = await Demande.findOne({
+        vendeur: user,
+        status: { $in: ["en attente", "refusée"] },
+      });
+      if (demande) user.demande = demande;
+      console.log(demande);
       res.status(200).json({ user: user });
     } else
       res.status(404).json({ message: "Utilisateur non inscrit dans servy" });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+exports.listCommandes = async (req, res) => {
+  try {
+    const user = req.user;
+    if (user) {
+      const commandes = await Commande.find({ client: user }).populate(
+        "service"
+      );
+      res.status(200).json({ commandes: commandes });
+    }
+  } catch (error) {
+    res.status(400).json({ error });
   }
 };
 exports.servicesList = async (req, res, next) => {
@@ -32,9 +52,12 @@ exports.servicesList = async (req, res, next) => {
 };
 exports.ServicePrestataireList = async (req, res, next) => {
   try {
-    const services = await ServicePrestataire.find({})
+    const services = await ServicePrestataire.find({
+      verifie: "Accepté",
+      actif: true,
+    })
       .limit(10)
-      .populate("vendeur", "nom photoDeProfil prenoms nom_complet profession")
+      .populate({ path: "vendeur", populate: "adresses" })
       .populate("service", "nom")
       .populate("materiaux");
     res.status(200).json({ services: services });
@@ -46,6 +69,7 @@ exports.VendeursList = async (req, res, next) => {
   try {
     const vendeurs = await User.find({
       role: { $in: ["vendeur", "vendeur pro"] },
+      actif: true,
     }).limit(10);
     res.status(200).json({ vendeurs: vendeurs });
   } catch (error) {
@@ -60,6 +84,8 @@ exports.getVendeurServiceBySearch = async (req, res, next) => {
         { nom: { $regex: nom, $options: "i" } },
         { prenoms: { $regex: nom, $options: "i" } },
       ],
+      actif: true,
+      role: { $in: ["vendeur", "vendeur pro"] },
     }).limit(10);
 
     const services = await Service.find({
@@ -67,6 +93,8 @@ exports.getVendeurServiceBySearch = async (req, res, next) => {
     });
     const servicesPrestataires = await ServicePrestataire.find({
       service: { $in: services },
+      verifie: "Accepté",
+      actif: true,
     })
       .populate("vendeur")
       .populate("service");
@@ -148,26 +176,32 @@ exports.placeOrder = async (req, res, next) => {
     if (!service) {
       throw new Error("Service introuvable");
     }
-    FedaPay.setApiKey(process.env.FEDAPAY_API_SECRET_KEY);
-    FedaPay.setEnvironment(process.env.FEDAPAY_ENVIRONMENT);
-    const transaction = await Transaction.create({
-      description: `Commande du client ${user.nom} ${user.prenoms}`,
-      amount: service.tarif,
-      callback_url: "http://localhost:300/users/callback-paiement",
-      currency: {
-        iso: "XOF",
-      },
-      customer: {
-        email: user.email,
-      },
-    });
-    const token = await transaction.generateToken();
-    console.log("ok3");
-    req.body.id_transaction = transaction.id;
-    console.log("ok4");
+    // FedaPay.setApiKey(process.env.FEDAPAY_API_SECRET_KEY);
+    // FedaPay.setEnvironment(process.env.FEDAPAY_ENVIRONMENT);
+    // console.log("ok1");
+    // const transaction = await Transaction.create({
+    //   description: `Commande du client ${user.nom} ${user.prenoms}`,
+    //   amount: service.tarif,
+    //   callback_url: "http://localhost:300/users/callback-paiement",
+    //   currency: {
+    //     iso: "XOF",
+    //   },
+    //   customer: {
+    //     email: user.email,
+    //   },
+    // });
+    // console.log("ok2");
+    // const token = await transaction.generateToken();
+    // console.log("ok3");
+    // req.body.id_transaction = transaction.id;
+    // console.log("ok4");
+    req.body.id_transaction = "PourLeMomentBof" + Date.now().toString();
     const nouvelleCommande = await Commande.create(req.body);
-    res.redirect(token.url);
+    // res.status(201).json({ commande: nouvelleCommande, url: token.url });
+    res.status(201).json({ commande: nouvelleCommande });
+    // res.redirect(token.url);
   } catch (error) {
+    console.log(error.message);
     res.status(500).json({ message: error.message });
   }
 };
