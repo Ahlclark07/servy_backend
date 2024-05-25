@@ -18,6 +18,7 @@ exports.becomeSeller = async (req, res, next) => {
         user.photoDeProfil = req.files["photodeprofil"][0].filename;
         user.profession = req.body.profession;
         user.enTransition = true;
+        await Demande.findOneAndDelete({ user: user });
         const demande = await Demande.create({ user: user._id });
       } else {
         throw new Error("Aucun fichier trouvé");
@@ -47,6 +48,7 @@ exports.becomeProSeller = async (req, res, next) => {
           req.files["attestationProfession"][0].filename;
         user.profession = req.body.profession;
         user.enTransition = true;
+        await Demande.findOneAndDelete({ user: user });
         const demande = await Demande.create({ user: user._id });
       } else {
         throw new Error("Attestation non trouvé");
