@@ -102,7 +102,8 @@ exports.getVendeurServiceBySearch = async (req, res, next) => {
       actif: true,
     })
       .populate({ path: "vendeur", populate: "adresses" })
-      .populate("service");
+      .populate("service")
+      .populate("materiaux");
     res
       .status(200)
       .json({ services: servicesPrestataires, vendeurs: vendeurs });
