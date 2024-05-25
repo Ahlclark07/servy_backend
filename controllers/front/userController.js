@@ -23,7 +23,7 @@ exports.userRole = async (req, res, next) => {
 
       if (demande) user.demande = demande;
 
-      res.status(200).json({ user: { ...user._doc, demande } });
+      res.status(200).json({ user: user, demande: demande });
     } else
       res.status(404).json({ message: "Utilisateur non inscrit dans servy" });
   } catch (error) {
