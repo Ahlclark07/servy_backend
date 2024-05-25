@@ -89,7 +89,9 @@ exports.getVendeurServiceBySearch = async (req, res, next) => {
       ],
       actif: true,
       role: { $in: ["vendeur", "vendeur pro"] },
-    }).limit(10);
+    })
+      .limit(10)
+      .populate("adresses");
 
     const services = await Service.find({
       nom: { $regex: nom, $options: "i" },
@@ -99,7 +101,7 @@ exports.getVendeurServiceBySearch = async (req, res, next) => {
       verifie: "Accepté",
       actif: true,
     })
-      .populate("vendeur")
+      .populate({ path: "vendeur", populate: "adresses" })
       .populate("service");
     res
       .status(200)
