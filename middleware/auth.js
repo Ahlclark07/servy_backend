@@ -9,9 +9,9 @@ class Middleware {
         .auth()
         .verifyIdToken(token ?? req.headers.authorization);
       if (decodeValue) {
-        req.user = await User.findOne({ idFirebase: decodeValue.uid }).populate(
-          "adresses"
-        );
+        req.user = await User.findOne({ idFirebase: decodeValue.uid })
+          .populate("adresses")
+          .populate("portefeuille");
         return next();
       }
       return res.json({ message: "Non autorisé" });
