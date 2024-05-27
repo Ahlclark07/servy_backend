@@ -10,6 +10,10 @@ const Service = require("../../models/service");
 const { FedaPay, Transaction } = require("fedapay");
 
 const fs = require("fs");
+const {
+  sortVendorsByProximity,
+  getCoords,
+} = require("../../utils/usefulFunctions.js");
 exports.userRole = async (req, res, next) => {
   try {
     const user = req.user;
@@ -75,6 +79,28 @@ exports.VendeursList = async (req, res, next) => {
       .limit(10)
       .populate("adresses");
     res.status(200).json({ vendeurs: vendeurs });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+exports.vendeursProches = async (req, res, next) => {
+  try {
+    const vendeurs = await User.find({
+      role: { $in: ["vendeur", "vendeur pro"] },
+      actif: true,
+    }).populate("adresses");
+
+    const liste = vendeurs.map((vendeur) => {
+      const localisation = vendeur.adresses[0]["localisationMap"];
+      const [lat, long] = getCoords(localisation);
+      return { ...vendeur._doc, coords: { lat, long } };
+    });
+    const [lat, long] = getCoords(req.user.adresses[0]["localisationMap"]);
+    const finalListe = sortVendorsByProximity(liste, {
+      lat: lat,
+      long: long,
+    });
+    res.status(200).json({ vendeurs: finalListe });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

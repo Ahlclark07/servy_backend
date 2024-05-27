@@ -21,6 +21,11 @@ UsersRouter.get(
   middleware.decodeToken,
   userController.servicesList
 );
+UsersRouter.get(
+  "/vendeursProches",
+  middleware.decodeToken,
+  userController.vendeursProches
+);
 UsersRouter.get("/vendeursList", userController.VendeursList);
 UsersRouter.get(
   "/servicesPrestatairesList",
