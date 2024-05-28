@@ -104,6 +104,11 @@ UsersRouter.get(
   middleware.decodeToken,
   clientController.clientListOrder
 );
+UsersRouter.get(
+  "/getOrder/:id",
+  middleware.decodeToken,
+  clientController.clientListOrder
+);
 
 UsersRouter.get(
   "/listOrderByStatus/:statut",

@@ -47,6 +47,20 @@ exports.listCommandes = async (req, res) => {
     res.status(400).json({ error });
   }
 };
+exports.getCommande = async (req, res) => {
+  try {
+    const user = req.user;
+    if (user) {
+      const commande = await Commande.find({
+        client: user,
+        _id: req.params.id,
+      }).populate({ path: "service", populate: "vendeur" });
+      res.status(200).json({ commande: commande });
+    }
+  } catch (error) {
+    res.status(400).json({ error });
+  }
+};
 exports.servicesList = async (req, res, next) => {
   try {
     const services = await Service.find({});
