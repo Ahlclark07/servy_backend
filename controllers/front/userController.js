@@ -53,7 +53,7 @@ exports.getCommande = async (req, res) => {
     if (user) {
       const commande = await Commande.findById(req.params.id).populate({
         path: "service",
-        populate: "vendeur",
+        populate: [{ path: "vendeur" }, { path: "service" }],
       });
       res.status(200).json({ commande: commande });
     }
