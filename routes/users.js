@@ -102,12 +102,12 @@ UsersRouter.get(
 UsersRouter.get(
   "/clientListOrder",
   middleware.decodeToken,
-  userController.getCommande
+  clientController.clientListOrder
 );
 UsersRouter.get(
   "/getOrder/:id",
   middleware.decodeToken,
-  clientController.getOrder
+  userController.getCommande
 );
 
 UsersRouter.get(
