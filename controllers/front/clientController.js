@@ -102,7 +102,7 @@ exports.clientListOrderByStatus = async (req, res, next) => {
   }
 };
 
-exports.clientCancelOrder = async (req, res, next) => {
+exports.clientCancelOrder = async (req, res) => {
   try {
     user = req.user;
     commande = await Commande.findOne({ _id: req.params.id });
@@ -130,7 +130,7 @@ exports.clientCancelOrder = async (req, res, next) => {
   }
 };
 
-exports.cancelOrderRequest = async (req, res, next) => {
+exports.cancelOrderRequest = async (req, res) => {
   try {
     user = req.user;
     commande = await Commande.findOne({ _id: req.params.id });

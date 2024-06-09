@@ -125,6 +125,7 @@ exports.getVendeurServiceBySearch = async (req, res, next) => {
     const vendeurs = await User.find({
       $or: [
         { nom: { $regex: nom, $options: "i" } },
+        { profession: { $regex: nom, $options: "i" } },
         { prenoms: { $regex: nom, $options: "i" } },
       ],
       actif: true,
