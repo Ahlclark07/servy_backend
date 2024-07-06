@@ -171,4 +171,9 @@ UsersRouter.post(
   vendeurController.makeRetrait
 );
 
+UsersRouter.get("/getCategories", userController.getCategories);
+UsersRouter.get(
+  "/getServicesByCat/:categorie",
+  userController.getServicesByCat
+);
 module.exports = UsersRouter;

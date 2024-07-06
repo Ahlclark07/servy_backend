@@ -1,6 +1,7 @@
 const User = require("../../models/user");
 const Commande = require("../../models/commande");
 const Demande = require("../../models/demande");
+const Demande = require("../../models/categorieDeService");
 
 const admin = require("../../config/firebase-config");
 const { getCurrentUser } = require("../../utils/getCurrentUser");
@@ -305,5 +306,31 @@ exports.callbackPaiement = async (req, res, next) => {
       message:
         "Une erreur est survenue lors de la mise à jour du statut de la commande",
     });
+  }
+};
+
+exports.getCategories = async (req, res) => {
+  try {
+    const categories = await CategorieDeService.find({ actif: true }).exec();
+    res.status(200).json({ categories });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getServicesByCat = async (req, res) => {
+  try {
+    const services = await Service.find({
+      categorie: req.params.categorie,
+    }).exec();
+    const servicesPrestataires = await ServicePrestataire.find({
+      service: { $in: services },
+    })
+      .populate({ path: "vendeur", populate: "adresses" })
+      .populate("service", "nom")
+      .populate("materiaux");
+    res.status(200).json({ servicesPrestataires });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
