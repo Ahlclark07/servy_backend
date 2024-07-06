@@ -1,7 +1,7 @@
 const User = require("../../models/user");
 const Commande = require("../../models/commande");
 const Demande = require("../../models/demande");
-const Demande = require("../../models/categorieDeService");
+const CategorieDeService = require("../../models/categorieDeService");
 
 const admin = require("../../config/firebase-config");
 const { getCurrentUser } = require("../../utils/getCurrentUser");
